@@ -36,7 +36,7 @@ COPY packages/ui/tsconfig.json ./packages/ui/
 COPY packages/api-client/src ./packages/api-client/src
 COPY packages/api-client/tsconfig.json ./packages/api-client/
 COPY packages/config/src ./packages/config/src
-COPY packages/config/tsconfig.json ./packages/config/
+COPY packages/config/tsconfig.base.json ./packages/config/tsconfig.base.json
 
 # Build all packages
 RUN pnpm run build
