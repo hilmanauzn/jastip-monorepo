@@ -1,0 +1,40 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@jastip/shared-types": [
+        "../../packages/shared-types/src"
+      ],
+      "@jastip/ui": [
+        "../../packages/ui/src"
+      ],
+      "@jastip/api-client": [
+        "../../packages/api-client/src"
+      ],
+      "@jastip/auth": [
+        "../../packages/auth/src"
+      ]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "jsx": "preserve"
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

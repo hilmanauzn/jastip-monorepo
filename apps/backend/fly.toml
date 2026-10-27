@@ -1,0 +1,32 @@
+app = "jastip-backend-multi"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  DATABASE_URL = "file:/data/prod.db"
+  # Set these via flyctl secrets set
+  # JWT_SECRET = ""
+  # CORS_ORIGIN = "https://admin.jastip.com,https://toko-a.jastip.com,https://toko-b.jastip.com,http://localhost:3000,http://localhost:4000"
+
+[mounts]
+  source = "data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"

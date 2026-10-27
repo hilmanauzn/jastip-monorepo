@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "db:generate": {
+      "outputs": ["node_modules/.prisma/**"]
+    },
+    "db:push": {},
+    "db:migrate": {},
+    "db:studio": {}
+  },
+  "globalEnv": ["DATABASE_URL", "JWT_SECRET", "CORS_ORIGIN", "NEXT_PUBLIC_API_URL"]
+}

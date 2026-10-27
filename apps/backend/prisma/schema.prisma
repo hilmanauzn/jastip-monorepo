@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANT & USER MANAGEMENT
+// ============================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  domain    String?  @unique
+  logoUrl   String?
+  settings  String?  // JSON string
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  restaurants     Restaurant[]
+  menus           MenuItem[]
+  orders          Order[]
+  jastipRule      JastipRuleTenant?
+  jastipOverrides JastipOverride[]
+  menuCategories  MenuCategory[]
+  customers       Customer[]
+  settingsModel   Settings?
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          String   @default("STAFF") // SUPER_ADMIN, ADMIN_TENANT, STAFF
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+// ============================================
+// RESTAURANT & MENU
+// ============================================
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  jastipFee   Int
+  multiple    Int      @default(1)
+  taxService  Int      @default(0)
+  taxCharge   Int      @default(0)
+  isActive    Boolean  @default(true)
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menus       MenuItem[]
+  orderItems  OrderItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model MenuCategory {
+  id        String   @id @default(cuid())
+  name      String
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model MenuItem {
+  id               String   @id @default(cuid())
+  externalId       String?  @unique
+  restaurantId     String
+  restaurant       Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  price            Int
+  category         String
+  includeJastip    Boolean  @default(true)
+  jastipFeeSpecial Int?
+  addons           String   @default("[]") // JSON string
+  imageUrl         String?
+  isAvailable      Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  orderItems       OrderItem[]
+
+  @@index([tenantId])
+  @@index([restaurantId])
+  @@index([category])
+  @@index([tenantId, isAvailable])
+}
+
+// ============================================
+// JASTIP RULES ENGINE
+// ============================================
+
+model JastipRuleGlobal {
+  id          String   @id @default(cuid())
+  type        String   @default("PER_UNIT") // PER_UNIT, PER_MULTIPLE, PER_ORDER, TIERED
+  multiple    Int      @default(6)
+  fee         Int      @default(0)
+  appliesTo   String   @default("INCLUDE_JASTIP") // ALL, INCLUDE_JASTIP
+  minOrderQty Int      @default(1)
+  maxFee      Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JastipRuleTenant {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type            String?  // PER_UNIT, PER_MULTIPLE, PER_ORDER, TIERED
+  multiple        Int?
+  fee             Int?
+  appliesTo       String?  // ALL, INCLUDE_JASTIP
+  minOrderQty     Int?
+  maxFee          Int?
+  useGlobalRule   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model JastipRuleTier {
+  id        String   @id @default(cuid())
+  ruleId    String
+  minQty    Int
+  maxQty    Int?
+  fee       Int
+  createdAt DateTime @default(now())
+
+  @@index([ruleId])
+}
+
+// ============================================
+// ORDERS & CUSTOMERS
+// ============================================
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  orderNumber       String   @unique
+  customerId        String?
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName      String
+  status            String   @default("DRAFT") // DRAFT, CONFIRMED, PREPARING, READY, DELIVERED, CANCELLED
+  subtotal          Int      @default(0)
+  jastipFeeTotal    Int      @default(0)
+  taxServiceTotal   Int      @default(0)
+  taxChargeTotal    Int      @default(0)
+  grandTotal        Int      @default(0)
+  ongkir            Int      @default(0)
+  destination       String?
+  paymentStatus     String   @default("UNPAID") // UNPAID, PARTIAL, PAID, REFUNDED
+  notes             String?
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  items             OrderItem[]
+  restaurantFees    OrderRestaurantFee[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, customerId])
+}
+
+model OrderItem {
+  id               String   @id @default(cuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId       String?
+  menuItem         MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  restaurantId     String?
+  restaurant       Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  name             String
+  description      String?
+  price            Int
+  basePrice        Int?
+  quantity         Int      @default(1)
+  category         String
+  includeJastip    Boolean  @default(true)
+  jastipFeeSpecial Int?
+  selectedAddon    String?
+  isManual         Boolean  @default(false)
+  subtotal         Int
+  createdAt        DateTime @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@index([restaurantId])
+}
+
+model OrderRestaurantFee {
+  id                   String   @id @default(cuid())
+  orderId              String
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  restaurantId         String
+  restaurantName       String
+  subtotal             Int
+  subtotalTaxable      Int
+  subtotalNonTax       Int
+  calculatedFee        Int
+  overrideFee          Int?
+  finalFee             Int
+  taxServiceAmount     Int
+  taxChargeAmount      Int
+  total                Int
+  totalQuantity        Int
+  qtyIncludeJastip     Int
+  multiple             Int
+  batches              Int
+  hasMultipleWarning   Boolean  @default(false)
+  createdAt            DateTime @default(now())
+
+  @@unique([orderId, restaurantId])
+  @@index([orderId])
+}
+
+// ============================================
+// JASTIP OVERRIDES (Legacy - per restaurant)
+// ============================================
+
+model JastipOverride {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  restaurantId  String
+  fee           Int
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  @@unique([tenantId, restaurantId])
+  @@index([tenantId])
+}
+
+// ============================================
+// SETTINGS
+// ============================================
+
+model Settings {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shopName     String   @default("Titipmarinceu")
+  tagline      String   @default("Jasa Titip Makanan Viral")
+  bankAccounts String   @default("[]")
+  qrisImageUrl String?
+  logoUrl      String?
+  updatedAt    DateTime @updatedAt
+}

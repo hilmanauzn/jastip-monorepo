@@ -1,0 +1,24 @@
+{
+  "name": "@jastip/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@jastip/shared-types": "workspace:*",
+    "@tanstack/react-query": "^5.28.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}
