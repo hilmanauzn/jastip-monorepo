@@ -37,8 +37,8 @@ COPY packages/api-client/src ./packages/api-client/src
 COPY packages/api-client/tsconfig.json ./packages/api-client/
 COPY packages/config/tsconfig.base.json ./packages/config/tsconfig.base.json
 
-# Build all packages
-RUN pnpm run build
+# Build only packages needed by backend (not Next.js dashboard/pos)
+RUN pnpm run build --filter=@jastip/backend^
 
 # Generate Prisma client
 RUN cd packages/shared-types && pnpm db:generate
