@@ -37,8 +37,10 @@ COPY packages/api-client/src ./packages/api-client/src
 COPY packages/api-client/tsconfig.json ./packages/api-client/
 COPY packages/config/tsconfig.base.json ./packages/config/tsconfig.base.json
 
-# Build only packages needed by backend (not Next.js dashboard/pos)
-RUN pnpm run build --filter=@jastip/backend^
+# Build packages needed by backend (shared-types, auth, then backend)
+RUN cd packages/shared-types && pnpm build
+RUN cd packages/auth && pnpm build
+RUN cd apps/backend && pnpm build
 
 # Generate Prisma client
 RUN cd packages/shared-types && pnpm db:generate
@@ -64,16 +66,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/backend/dist ./apps/backend/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/prisma ./packages/shared-types/prisma
 COPY --from=builder --chown=nodejs:nodejs /app/packages/auth/dist ./packages/auth/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/ui/dist ./packages/ui/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/api-client/dist ./packages/api-client/dist
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder --chown=nodejs:nodejs /app/apps/backend/package.json ./apps/backend/package.json
 COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/package.json ./packages/shared-types/package.json
 COPY --from=builder --chown=nodejs:nodejs /app/packages/auth/package.json ./packages/auth/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/ui/package.json ./packages/ui/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/api-client/package.json ./packages/api-client/package.json
 COPY --from=builder --chown=nodejs:nodejs /app/packages/config/package.json ./packages/config/package.json
 
 # Copy entrypoint script
