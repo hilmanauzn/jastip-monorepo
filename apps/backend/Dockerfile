@@ -35,7 +35,6 @@ COPY packages/ui/src ./packages/ui/src
 COPY packages/ui/tsconfig.json ./packages/ui/
 COPY packages/api-client/src ./packages/api-client/src
 COPY packages/api-client/tsconfig.json ./packages/api-client/
-COPY packages/config/src ./packages/config/src
 COPY packages/config/tsconfig.base.json ./packages/config/tsconfig.base.json
 
 # Build all packages
@@ -67,7 +66,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/prisma ./pa
 COPY --from=builder --chown=nodejs:nodejs /app/packages/auth/dist ./packages/auth/dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/ui/dist ./packages/ui/dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api-client/dist ./packages/api-client/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/config/dist ./packages/config/dist
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
