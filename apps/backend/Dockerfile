@@ -1,8 +1,4 @@
-# Multi-stage build for Render
-# ============================================
-# Stage 1: Builder - install deps, build, generate Prisma
-# ============================================
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 WORKDIR /app
 
 # Install openssl for Prisma engine compatibility
@@ -20,7 +16,7 @@ COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/config/package.json ./packages/config/
 
-# Install all dependencies (including dev for build)
+# Install all dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
@@ -37,7 +33,7 @@ COPY packages/api-client/src ./packages/api-client/src
 COPY packages/api-client/tsconfig.json ./packages/api-client/
 COPY packages/config/tsconfig.base.json ./packages/config/tsconfig.base.json
 
-# Build packages needed by backend (shared-types, auth, then backend)
+# Build packages needed by backend
 RUN cd packages/shared-types && pnpm build
 RUN cd packages/auth && pnpm build
 RUN cd apps/backend && pnpm build
@@ -45,43 +41,13 @@ RUN cd apps/backend && pnpm build
 # Generate Prisma client
 RUN cd packages/shared-types && pnpm db:generate
 
-# Keep all node_modules (workspace deps needed at runtime)
-# No --prod pruning to avoid missing express/workspace packages
-
-# ============================================
-# Stage 2: Runner - minimal production image
-# ============================================
-FROM node:20-alpine AS runner
-WORKDIR /app
-
-# Install openssl for Prisma engine compatibility
-RUN apk add --no-cache openssl
-
-# Install pnpm for prisma migration at runtime
-RUN npm install -g pnpm
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
-
-# Copy production node_modules and built artifacts from builder
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/dist ./packages/shared-types/dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/prisma ./packages/shared-types/prisma
-COPY --from=builder --chown=nodejs:nodejs /app/packages/auth/dist ./packages/auth/dist
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/apps/backend/package.json ./apps/backend/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/shared-types/package.json ./packages/shared-types/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/auth/package.json ./packages/auth/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/config/package.json ./packages/config/package.json
+USER nodejs
 
 # Copy entrypoint script
 COPY --chown=nodejs:nodejs apps/backend/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-USER nodejs
 
 WORKDIR /app/apps/backend
 EXPOSE 8080
