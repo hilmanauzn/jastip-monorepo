@@ -57,6 +57,9 @@ WORKDIR /app
 # Install openssl for Prisma engine compatibility
 RUN apk add --no-cache openssl
 
+# Install pnpm for prisma migration at runtime
+RUN npm install -g pnpm
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
 
