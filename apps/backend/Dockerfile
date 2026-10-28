@@ -45,8 +45,8 @@ RUN cd apps/backend && pnpm build
 # Generate Prisma client
 RUN cd packages/shared-types && pnpm db:generate
 
-# Prune dev dependencies
-RUN pnpm install --prod --frozen-lockfile
+# Keep all node_modules (workspace deps needed at runtime)
+# No --prod pruning to avoid missing express/workspace packages
 
 # ============================================
 # Stage 2: Runner - minimal production image
